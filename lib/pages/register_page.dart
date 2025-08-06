@@ -1,6 +1,5 @@
-// import 'package:flutter/widgets.dart';
+import 'package:chat_apps/auth/auth_service.dart';
 import 'package:chat_apps/components/my_textfield.dart';
-// import 'package:chat_apps/services/auth/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../components/my_button.dart';
 
@@ -19,32 +18,32 @@ class RegisterPage extends StatelessWidget {
   //register method
   void register(BuildContext context) {
     //get auth service
-    // final auth = AuthService();
+    final _auth = AuthService();
 
     // password match -> create user
     if (_passController.text == _confirmpassController.text) {
-      // try {
-      //   auth.signUpWithEmailPassword(
-      //     _emailController.text,
-      //     _passController.text,
-      //   );
-      // } catch (e) {
-      //   showDialog(
-      //     context: context,
-      //     builder: (context) => AlertDialog(
-      //       title: Text(e.toString()),
-      //     ),
-      //   );
-      // }
+       try {
+         _auth.signUpWithEmailPassword(
+          _emailController.text,
+          _passController.text,
+         );
+       } catch (e) {
+         showDialog(
+         context: context,
+         builder: (context) => AlertDialog(
+           title: Text(e.toString()),
+          ),
+       );
+     }
     }
-    //password don't match -> show error
+    //password don't match -> tell user to fix
     else {
       showDialog(
         context: context,
         builder: (context) => const AlertDialog(
-          title: Text("Password don't match!"),
+          title: Text("Passwords don't match!"),
         ),
-      );
+       );
     }
   }
 

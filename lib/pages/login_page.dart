@@ -1,8 +1,11 @@
 // import 'dart:ffi';
 // import 'package:flutter/widgets.dart';
+
+import 'package:chat_apps/auth/auth_service.dart';
 import 'package:chat_apps/components/my_button.dart';
 import 'package:chat_apps/components/my_textfield.dart';
-// import 'package:chat_apps/services/auth/auth_service.dart';
+
+
 import 'package:flutter/material.dart';
 class LoginPage extends StatelessWidget {
   //email and pass text controllers
@@ -18,25 +21,28 @@ class LoginPage extends StatelessWidget {
   //login method
   void login(BuildContext context) async {
     //auth service
-    // final authService = AuthService();
+     final authService = AuthService();
 
     //try login
-    // try {
-    //   await authService.signInWithEmailPassword(
-    //     _emailController.text,
-    //     _passController.text,
-    //   );
-    // }
+     try {
+      //rint("Login button clicked");
+     await authService.signInWithEmailPassword(
+        _emailController.text,
+        _passController.text,
+       );
+       //print("Login success");
+    }
 
     //catch any errors
-    // catch (e) {
-    //   showDialog(
-    //     context: context,
-    //     builder: (context) => AlertDialog(
-    //       title: Text(e.toString()),
-    //     ),
-    //   );
-    // }
+     catch(e) {
+    // print("Login failed: $e");
+       showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(e.toString()),
+        ),
+       );
+    }
   }
 
   @override
@@ -88,6 +94,7 @@ class LoginPage extends StatelessWidget {
             MyButton(
               text: "Login",
               onTap: () => login(context),
+            
             ),
 
             const SizedBox(height: 50),

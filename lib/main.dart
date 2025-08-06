@@ -1,11 +1,19 @@
-import 'package:chat_apps/auth/login_or_register.dart';
+import 'package:chat_apps/auth/auth_gate.dart';
+import 'package:chat_apps/firebase_options.dart';
 import 'package:chat_apps/themes/light_mode.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 
-void main() {
+void main()async {
+  
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
+    
  runApp(const MyApp());
 }
+
+
 class MyApp extends StatelessWidget { 
 const MyApp({super.key});
 
@@ -14,8 +22,8 @@ const MyApp({super.key});
 Widget build(BuildContext context) {
   return MaterialApp(
     debugShowCheckedModeBanner: false,
-    home:  LoginOrRegister(), 
-  theme: lightMode,
+    home: const AuthGate(),
+    theme: lightMode,
   );
-}
+ }
 }
