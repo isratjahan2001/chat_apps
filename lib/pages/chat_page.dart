@@ -1,157 +1,187 @@
 import 'package:chat_apps/components/chat_bubble.dart';
 import 'package:chat_apps/components/my_textfield.dart';
 import 'package:chat_apps/services/auth/auth_service.dart';
-import  'package:chat_apps/services/chat/chat_service.dart';
+import 'package:chat_apps/services/chat/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class ChatPage extends StatelessWidget {
-
+class ChatPage extends StatefulWidget {
   final String receiverEmail;
   final String receiverID;
 
-   ChatPage({
+  const ChatPage({
     super.key,
     required this.receiverEmail,
-     required this.receiverID,
+    required this.receiverID,
   });
 
-  //text controller
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  // Text controller
   final TextEditingController _messageController = TextEditingController();
 
-  //chat & auth services
+  // Chat & auth services
   final ChatService _chatService = ChatService();
   final AuthService _authService = AuthService();
 
+  // Scroll controller
+  final ScrollController _scrollController = ScrollController();
 
-   //send message
-  void sendMessage() async {
-    //if there is something inside the textfield
-    if (_messageController.text.isNotEmpty) {
-      //send the message
-      await _chatService.sendMessage(
-        receiverID, _messageController.text);
+  // Focus node for textfield
+  FocusNode myFocusNode = FocusNode();
 
-         //clear text controller
-      _messageController.clear();
+  @override
+  void initState() {
+    super.initState();
+
+    // Add listener to focus node
+    myFocusNode.addListener(() {
+      if (myFocusNode.hasFocus) {
+        // Scroll down after keyboard appears
+        Future.delayed(
+          const Duration(milliseconds: 500),
+          () => scrollDown(),
+        );
+      }
+    });
+
+    // Scroll to bottom after listview is built
+    Future.delayed(
+      const Duration(milliseconds: 500),
+      () => scrollDown(),
+    );
+  }
+
+  @override
+  void dispose() {
+    myFocusNode.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  // Scroll to bottom
+  void scrollDown() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(seconds: 1),
+        curve: Curves.fastOutSlowIn,
+      );
     }
   }
 
+  // Send message
+  void sendMessage() async {
+    if (_messageController.text.isNotEmpty) {
+      await _chatService.sendMessage(
+        widget.receiverID,
+        _messageController.text,
+      );
 
+      _messageController.clear();
+      scrollDown();
+    }
+  }
 
- 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
-       backgroundColor: Theme.of(context).colorScheme.background,
-    appBar: AppBar(
-      title:  Text(receiverEmail),
-      backgroundColor: Colors.transparent,
-      foregroundColor: Colors.grey,
+      backgroundColor: Theme.of(context).colorScheme.background,
+      appBar: AppBar(
+        title: Text(widget.receiverEmail),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.grey,
         elevation: 0,
       ),
-    body: Column(
+      body: Column(
         children: [
-          //display all  messages
-          Expanded(
-            child: _buildMessageList(),
-          ),
+          // Display messages
+          Expanded(child: _buildMessageList()),
 
-           //user input
-            _buildUserInput(),
+          // User input
+          _buildUserInput(),
         ],
-    ),
+      ),
     );
-    }
+  }
 
-     //build message list
+  // Build message list
   Widget _buildMessageList() {
     String senderID = _authService.getCurrentUser()!.uid;
-    return StreamBuilder(
-      stream: _chatService.getMessages(receiverID, senderID),
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _chatService.getMessages(widget.receiverID, senderID),
       builder: (context, snapshot) {
-        //errors
-        if (snapshot.hasError) {
-          return const Text("Error");
-        }
-
-        //loading
+        if (snapshot.hasError) return const Text("Error");
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text("Loading..");
+          return const Text("Loading...");
         }
 
-        //return list view
         return ListView(
-           children:
+          controller: _scrollController,
+          children:
               snapshot.data!.docs.map((doc) => _buildMessageItem(doc)).toList(),
         );
       },
     );
   }
 
-   //build message item
+  // Build message item
   Widget _buildMessageItem(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    bool isCurrentUser = data['senderID'] == _authService.getCurrentUser()!.uid;
 
-    //is current user
-     bool isCurrentUser = data['senderID'] == _authService.getCurrentUser()!.uid;
-
-    //align message to the right if sender is the current user, otherwise left
-    var alignment = 
-          isCurrentUser ? Alignment.centerRight : Alignment.centerLeft;
-
-
-    return  Container(
-      alignment: alignment,
+    return Container(
+      alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
         crossAxisAlignment:
             isCurrentUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-             children: [
+        children: [
           ChatBubble(
-            message: data["message" ],
-          isCurrentUser: isCurrentUser,
-          )
-          ],
+            message: data["message"],
+            isCurrentUser: isCurrentUser,
+          ),
+        ],
       ),
     );
   }
 
-
-
-  //build message input
+  // Build message input
   Widget _buildUserInput() {
     return Padding(
-       padding: const EdgeInsets.only(bottom: 50.0),
-       child: Row(
-      children: [
-         //textfield should take up most of the space
+      padding: const EdgeInsets.only(bottom: 50.0),
+      child: Row(
+        children: [
+          // Textfield
           Expanded(
             child: MyTextField(
               controller: _messageController,
               hintText: "Type a message",
               obscureText: false,
-              
+              focusNode: myFocusNode,
             ),
           ),
 
-        //send button
-        Container(
+          // Send button
+          Container(
             decoration: const BoxDecoration(
               color: Colors.green,
               shape: BoxShape.circle,
             ),
             margin: const EdgeInsets.only(right: 25),
-      child:   IconButton(
+            child: IconButton(
               onPressed: sendMessage,
               icon: const Icon(
                 Icons.arrow_upward,
-                 color: Colors.white,
-                ),
-        ),
-        ),     
-
-         ],
-       ),
-      );
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
